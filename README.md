@@ -1,101 +1,117 @@
-# Analise e Predicao de Atrasos de Voos nos EUA
+# Análise e Predição de Atrasos de Voos nos EUA
 
 Tech Challenge - MLET Fase 3
 
-## Descricao
+## Descrição
 
-Este projeto desenvolve um pipeline completo de ciencia de dados para analisar e prever atrasos de voos nos Estados Unidos, aplicando tecnicas de Machine Learning supervisionado e nao supervisionado. O estudo abrange desde a exploracao dos dados ate a interpretacao critica dos resultados.
+Este projeto desenvolve um pipeline completo de ciência de dados para analisar e prever atrasos de voos nos Estados Unidos, aplicando técnicas de Machine Learning supervisionado e não supervisionado. O estudo abrange desde a exploração e engenharia de features até a detecção de anomalias e interpretação crítica dos resultados.
 
 ## Base de Dados
 
-Datasets publicos referentes ao ano de 2015, compostos por tres arquivos:
+Datasets públicos referentes ao ano de 2015, compostos por três arquivos:
 
-| Arquivo | Descricao |
+| Arquivo | Descrição |
 |---|---|
-| `flights.csv` | Registros detalhados de voos nos EUA (aprox. 5.8 milhoes de linhas) |
-| `airlines.csv` | Codigo IATA e nome das companhias aereas |
-| `airports.csv` | Informacoes dos aeroportos (codigo, nome, cidade, estado, coordenadas) |
+| `flights.csv` | Registros detalhados de voos nos EUA (aprox. 5,8 milhões de linhas) |
+| `airlines.csv` | Código IATA e nome das companhias aéreas |
+| `airports.csv` | Informações dos aeroportos (código, nome, cidade, estado, coordenadas) |
 
-> O arquivo `flights.csv` possui 564 MB e e armazenado via Git LFS.
+> O arquivo `flights.csv` possui 564 MB e é armazenado via Git LFS.
 
 ## Estrutura do Projeto
 
 ```
-tech_challenge_flights.ipynb   # Notebook principal com toda a analise
-flights.csv                    # Dataset de voos (Git LFS)
-airlines.csv                   # Dataset de companhias aereas
-airports.csv                   # Dataset de aeroportos
+tech_challenge_3.ipynb   # Notebook principal com toda a análise
+flights.csv              # Dataset de voos (Git LFS)
+airlines.csv             # Dataset de companhias aéreas
+airports.csv             # Dataset de aeroportos
 ```
 
-## Conteudo do Notebook
+## Conteúdo do Notebook
 
-### 1. Importacao de Bibliotecas e Dados
-Carregamento e enriquecimento dos datasets com join entre voos e companhias aereas.
+### 1. Importação de Bibliotecas e Dados
+Carregamento dos três datasets e enriquecimento dos voos com o nome da companhia aérea via merge por código IATA.
 
-### 2. Exploracao dos Dados (EDA)
-- Estatisticas descritivas das variaveis principais
-- Analise de valores ausentes
-- Distribuicao dos atrasos na partida e na chegada
-- Atrasos por companhia aerea
-- Atrasos por mes e dia da semana
-- Atrasos por horario de partida
-- Top aeroportos com maior atraso medio
-- Analise das causas de atraso (sistema aereo, clima, companhia, aeronave, seguranca)
-- Matriz de correlacao entre variaveis numericas
+### 2. Exploração dos Dados (EDA)
+- Visão geral e estatísticas descritivas
+- Análise de valores ausentes
+- Distribuição dos atrasos na partida e na chegada
+- Atrasos por companhia aérea, mês, dia da semana e horário
+- Top aeroportos com maior atraso médio
+- Análise das causas de atraso (sistema aéreo, clima, companhia, aeronave, segurança)
+- Matriz de correlação entre variáveis numéricas
 
-### 3. Tratamento de Dados
-- Remocao de voos cancelados e desviados
-- Imputacao de valores ausentes
-- Engenharia de features (faixa horaria, variavel target binaria)
-- Codificacao de variaveis categoricas
+### 3. Feature Engineering
+Criação de variáveis derivadas com sinal preditivo confirmado graficamente:
+- `PERIOD_OF_DAY` — período do dia (madrugada / manhã / tarde / noite)
+- `SEASON` — estação do ano (hemisfério norte)
+- `IS_WEEKEND` — indicador de fim de semana
+- `IS_HOLIDAY` — indicador de feriado federal dos EUA em 2015 e períodos de alto tráfego
 
-### 4. Modelagem Supervisionada
+### 4. Tratamento e Preparação para Modelagem
+- Remoção de voos cancelados
+- Remoção de linhas sem informação de atraso
+- Criação do target binário `IS_DELAYED` (chegada com >= 15 min de atraso)
+- Target encoding com smoothing para a variável de alta cardinalidade `ORIGIN_AIRPORT`
+- Codificação one-hot para variáveis categóricas nominais
 
-**4.1 Classificacao - Prever se um voo vai atrasar (atraso >= 15 min)**
-- Regressao Logistica
-- Random Forest Classifier
-- Metricas: accuracy, precision, recall, F1-score, ROC-AUC, matriz de confusao
+### 5. Modelagem Supervisionada
 
-**4.2 Regressao - Prever a duracao do atraso**
+**5.1 Classificação — Prever se um voo vai atrasar (IS_DELAYED)**
+- Regressão Logística (com `class_weight='balanced'`)
+- Random Forest Classifier (com `class_weight='balanced'`)
+- Métricas: accuracy, precision, recall, F1-score, ROC-AUC, matriz de confusão, curva ROC
+- Importância de features
+- Validação cruzada estratificada (5-fold)
+- Comparação com split temporal (treino em meses 1-9, teste em 10-12)
+
+**5.2 Regressão — Prever a magnitude do atraso (ARRIVAL_DELAY)**
 - Random Forest Regressor
 - Gradient Boosting Regressor
-- Metricas: MAE, RMSE, R2
+- Métricas: MAE, RMSE, R²
+- Clip de outliers em [-30, 300] minutos
 
-### 5. Modelagem Nao Supervisionada
+### 6. Modelagem Não Supervisionada
 
-**5.1 Clusterizacao (K-Means)**
-- Agrupamento de aeroportos por perfil de atraso
-- Metodo do cotovelo para selecao do numero de clusters
-- Visualizacao e interpretacao dos grupos
+**6.1 Clusterização (K-Means) — Companhias Aéreas**
+- Agrupamento das 14 companhias por perfil operacional (atraso médio, distância, taxa de cancelamento, taxi time, volume de voos)
+- Método do cotovelo para seleção de K
+- Visualização dos clusters via PCA 2D com rótulos
 
-**5.2 Reducao de Dimensionalidade (PCA)**
-- Analise de variancia explicada pelos componentes principais
-- Visualizacao dos dados em espaco reduzido
+**6.2 Redução de Dimensionalidade (PCA) — Voos**
+- Análise de variância explicada por componente
+- Loadings dos principais componentes
+- Visualização 2D colorida por nível de atraso (adiantado / leve / moderado / severo)
 
-### 6. Conclusoes e Proximos Passos
-- Principais achados sobre padroes de atraso
-- Limitacoes dos modelos
-- Sugestoes de melhorias e proximas iteracoes
+### 7. Bônus: Detecção de Anomalias (Isolation Forest)
+- Identificação de voos com perfil operacional atípico
+- Features: `DEPARTURE_DELAY`, `TAXI_OUT`, `TAXI_IN`, `AIR_TIME`, `DISTANCE`, `SCHEDULED_TIME`
+- Contaminação de 1%; comparação da distribuição de atraso entre anomalias e voos normais
+
+### 8. Conclusões, Limitações e Próximos Passos
+- Principais achados sobre padrões de atraso e desempenho dos modelos
+- Limitações (único ano, ausência de dados externos, amostragem)
+- Sugestões de melhorias: XGBoost/LightGBM, histórico da aeronave, dados de clima, deploy via FastAPI
 
 ## Principais Insights
 
-- Voos programados para o inicio da manha apresentam os menores indices de atraso
-- Os atrasos aumentam progressivamente ao longo do dia, atingindo pico no fim da tarde e no inicio da noite
-- Aeronave atrasada e a principal causa de propagacao de atrasos na rede
-- Ha variacao sazonal significativa: junho e julho concentram os maiores atrasos medios
-- Sexta-feira e o dia da semana com maior atraso medio
+- Voos da manhã apresentam os menores índices de atraso; o pico ocorre no período noturno
+- Feriados concentram atrasos médios superiores aos dias normais
+- `ORIGIN_ENC` (target encoding do aeroporto de origem), `HOUR` e `DISTANCE` são as features mais importantes para classificação
+- K-Means (K=3) separou as companhias em perfis distintos de pontualidade e operação
+- Isolation Forest identificou ~1% dos voos com perfil anômalo, com médias de atraso e taxi time substancialmente maiores
 
 ## Tecnologias Utilizadas
 
 - Python 3
 - pandas, numpy
 - matplotlib, seaborn
-- scikit-learn (LogisticRegression, RandomForestClassifier, RandomForestRegressor, GradientBoostingRegressor, KMeans, PCA)
+- scikit-learn (LogisticRegression, RandomForestClassifier, RandomForestRegressor, GradientBoostingRegressor, IsolationForest, KMeans, PCA, StandardScaler, StratifiedKFold)
 - Jupyter Notebook
 
 ## Como Executar
 
-1. Clone o repositorio (requer Git LFS instalado para baixar o arquivo `flights.csv`):
+1. Clone o repositório (requer Git LFS instalado para baixar o arquivo `flights.csv`):
 
 ```bash
 git lfs install
@@ -103,7 +119,7 @@ git clone https://github.com/GabrielPeixer/delay_voos.git
 cd delay_voos
 ```
 
-2. Instale as dependencias:
+2. Instale as dependências:
 
 ```bash
 pip install pandas numpy matplotlib seaborn scikit-learn jupyter
@@ -112,9 +128,9 @@ pip install pandas numpy matplotlib seaborn scikit-learn jupyter
 3. Execute o notebook:
 
 ```bash
-jupyter notebook tech_challenge_flights.ipynb
+jupyter notebook tech_challenge_3.ipynb
 ```
 
-## Observacao sobre o Dataset
+## Observação sobre o Dataset
 
-O arquivo `flights.csv` possui aproximadamente 565 MB e e armazenado com Git Large File Storage (LFS). Para baixa-lo corretamente, certifique-se de ter o Git LFS instalado antes de clonar o repositorio (`git lfs install`).
+O arquivo `flights.csv` possui aproximadamente 565 MB e é armazenado com Git Large File Storage (LFS). Para baixá-lo corretamente, certifique-se de ter o Git LFS instalado antes de clonar o repositório (`git lfs install`).
